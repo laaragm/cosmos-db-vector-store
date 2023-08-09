@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.6" />
+      <PackageReference Include="Azure.Storage.Blobs" Version="12.17.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0-preview.6.23329.7" />
+      <PackageReference Include="MongoDB.Driver" Version="2.20.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="PdfPig" Version="0.1.8" />
+    </ItemGroup>
+
+</Project>

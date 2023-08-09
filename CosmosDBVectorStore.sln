@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CosmosDBVectorStore.API", "CosmosDBVectorStore.API\CosmosDBVectorStore.API.csproj", "{BEFBD4C2-03F3-4803-96BB-5B82BD5A2FA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CosmosDBVectorStore.Lib", "CosmosDBVectorStore.Lib\CosmosDBVectorStore.Lib.csproj", "{E96383B4-9AA1-4BDC-88D0-27555F770646}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BEFBD4C2-03F3-4803-96BB-5B82BD5A2FA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEFBD4C2-03F3-4803-96BB-5B82BD5A2FA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEFBD4C2-03F3-4803-96BB-5B82BD5A2FA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEFBD4C2-03F3-4803-96BB-5B82BD5A2FA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E96383B4-9AA1-4BDC-88D0-27555F770646}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E96383B4-9AA1-4BDC-88D0-27555F770646}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E96383B4-9AA1-4BDC-88D0-27555F770646}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E96383B4-9AA1-4BDC-88D0-27555F770646}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
