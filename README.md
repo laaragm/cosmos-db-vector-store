@@ -1,7 +1,8 @@
 # cosmos-db-vector-store
 Integrate AI-powered vector search in Cosmos DB. Store, index &amp; query high-dimensional vector data in Azure Cosmos DB for MongoDB vCore.
 
-CosmosDBVectorStore.API/local.settings.json
+`CosmosDBVectorStore.API/local.settings.json`
+```json
 {
     "IsEncrypted": false,
     "Values": {
@@ -17,3 +18,4 @@ CosmosDBVectorStore.API/local.settings.json
         "DbCollectionNames": ""
     }
 }
+```
