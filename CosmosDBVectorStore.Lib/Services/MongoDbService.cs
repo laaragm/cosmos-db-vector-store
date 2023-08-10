@@ -61,6 +61,8 @@ public class MongoDbService : IMongoDbService
 
     private void CreateIndexForVectors()
     {
+        var documentCount = GetDocumentCount(CollectionEnumerator.Vectors.Name);
+        var numLists = documentCount / 1000;
         BsonDocumentCommand<BsonDocument> command = new BsonDocumentCommand<BsonDocument>(
             BsonDocument.Parse($@"
                 {{ 
@@ -68,7 +70,7 @@ public class MongoDbService : IMongoDbService
                     indexes: [{{
                         name: '{VectorIndexName}', 
                         key: {{ vector: 'cosmosSearch' }}, 
-                        cosmosSearchOptions: {{ kind: 'vector-ivf', numLists: 5, similarity: 'COS', dimensions: 1536 }} 
+                        cosmosSearchOptions: {{ kind: 'vector-ivf', numLists: {numLists}, similarity: 'COS', dimensions: 1536 }} 
                     }}] 
                 }}"
             ));
@@ -79,6 +81,26 @@ public class MongoDbService : IMongoDbService
         if (result["ok"] != 1)
             _logger.LogError("Could not create vector index: " + result.ToJson());
     }
+    
+    private long GetDocumentCount(string collectionName)
+    {
+        if (!_collections.ContainsKey(collectionName))
+        {
+            _logger.LogError($"No collection found with the name: {collectionName}.");
+            throw new ArgumentException($"Collection {collectionName} does not exist.");
+        }
+
+        try
+        {
+            return _collections[collectionName].CountDocuments(new BsonDocument());
+        }
+        catch (MongoException exception)
+        {
+            _logger.LogError($"Could not get document count for {collectionName}: {exception.Message}");
+            throw;
+        }
+    }
+
 
     public IDictionary<string, IMongoCollection<BsonDocument>> GetCollections() => _collections;
 
