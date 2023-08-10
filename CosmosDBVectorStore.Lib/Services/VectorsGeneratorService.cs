@@ -1,3 +1,4 @@
+using CosmosDBVectorStore.Lib.Enumerators;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Bson.Serialization;
@@ -24,30 +25,46 @@ public class VectorsGeneratorService : IVectorsGeneratorService
     {
         try
         {
-            _logger.LogInformation("Generating vectors.");
-            
-            var filter = new BsonDocument();
-            var collections = _mongoDbService.GetCollections();
-            using (var cursor = await collections["docs"].Find(filter).ToCursorAsync())
+            _logger.LogInformation("Starting vector generation.");
+
+            var documents = await RetrieveAllDocuments();
+            foreach (var document in documents)
             {
-                while (await cursor.MoveNextAsync())
-                {
-                    var batch = cursor.Current;
-                    foreach (var document in batch)
-                    { 
-                        var pageDocument = BsonSerializer.Deserialize<PageDocument>(document);
-                        pageDocument.Vector = await _openAiService.GetEmbeddings(document.ToString());
-                        await _mongoDbService.UpsertVector(pageDocument.ToBsonDocument());
-                    }
-                }
+                var vector = await ConvertDocumentToVector(document);
+                await StoreVectorInDatabase(document, vector);
             }
 
-            _logger.LogInformation($"Document vector generation has been successfully finished.");
-        } 
-        catch(MongoException exception)
+            _logger.LogInformation("Vector generation completed successfully.");
+        }
+        catch (MongoException exception)
         {
-            _logger.LogError($"Could not generate vectors: {exception.Message}");
+            _logger.LogError($"Error during vector generation: {exception.Message}");
             throw;
         }
+    }
+
+    private async Task<IEnumerable<BsonDocument>> RetrieveAllDocuments()
+    {
+        var filter = new BsonDocument();
+        var collections = _mongoDbService.GetCollections();
+        var documents = new List<BsonDocument>();
+
+        using var cursor = await collections[CollectionEnumerator.Docs.Name].Find(filter).ToCursorAsync();
+        while (await cursor.MoveNextAsync())
+            documents.AddRange(cursor.Current);
+
+        return documents;
+    }
+
+    private async Task<float[]?> ConvertDocumentToVector(BsonDocument document)
+    {
+        return await _openAiService.GetEmbeddings(document.ToString());
+    }
+
+    private async Task StoreVectorInDatabase(BsonDocument document, float[]? vector)
+    {
+        var pageDocument = BsonSerializer.Deserialize<PageDocument>(document);
+        pageDocument.Vector = vector;
+        await _mongoDbService.UpsertVector(pageDocument.ToBsonDocument());
     }
 }

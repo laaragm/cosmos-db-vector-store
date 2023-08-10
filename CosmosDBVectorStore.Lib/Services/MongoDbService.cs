@@ -1,3 +1,4 @@
+using CosmosDBVectorStore.Lib.Enumerators;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Bson.Serialization;
@@ -12,104 +13,118 @@ public class MongoDbService : IMongoDbService
     private readonly IMongoDatabase? _database;
     private readonly Dictionary<string, IMongoCollection<BsonDocument>> _collections;
     
+    private const string VectorIndexName = "vectorSearchIndex";
+
     public MongoDbService(IAppSettings appSettings, ILogger<MongoDbService> logger)
-	{
-		_logger = logger;
-		_collections = new Dictionary<string, IMongoCollection<BsonDocument>>();
-		try
-		{
-			var client = new MongoClient(appSettings.DbConnectionString);
-			_database = client.GetDatabase(appSettings.DbName);
-			InitializeCollections(appSettings.DbCollectionNames);
-			CreateVectorIndexIfNotExists(_collections["vectors"]);
-		}
-		catch (Exception exception)
-		{
-			_logger.LogError("Could not initialize MongoDB: " + exception.Message);
-		}
-	}
+    {
+        _logger = logger;
+        _collections = new Dictionary<string, IMongoCollection<BsonDocument>>();
+
+        try
+        {
+            _database = SetupDatabase(appSettings);
+            InitializeCollections();
+            EnsureVectorIndexIsPresent(_collections[CollectionEnumerator.Vectors.Name]);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError("Could not initialize MongoDB: " + exception.Message);
+        }
+    }
+
+    private IMongoDatabase SetupDatabase(IAppSettings appSettings)
+    {
+        var client = new MongoClient(appSettings.DbConnectionString);
+        return client.GetDatabase(appSettings.DbName);
+    }
+
+    private void InitializeCollections()
+    {
+        var collections = CollectionEnumerator.AllCollections.ToList();
+        foreach (var item in collections)
+        {
+            var collectionName = item.Name;
+            IMongoCollection<BsonDocument>? collection = _database?.GetCollection<BsonDocument>(collectionName.Trim()) ?? throw new ArgumentException("Unable to connect to database.");
+            _collections.Add(collectionName, collection);
+        }
+    }
+
+    private void EnsureVectorIndexIsPresent(IMongoCollection<BsonDocument> vectorCollection)
+    {
+        using (IAsyncCursor<BsonDocument> indexCursor = vectorCollection.Indexes.List())
+        {
+            bool vectorIndexExists = indexCursor.ToList().Any(x => x["name"] == VectorIndexName);
+            if (!vectorIndexExists)
+                CreateIndexForVectors();
+        }
+    }
+
+    private void CreateIndexForVectors()
+    {
+        BsonDocumentCommand<BsonDocument> command = new BsonDocumentCommand<BsonDocument>(
+            BsonDocument.Parse($@"
+                {{ 
+                    createIndexes: '{CollectionEnumerator.Vectors.Name}',
+                    indexes: [{{
+                        name: '{VectorIndexName}', 
+                        key: {{ vector: 'cosmosSearch' }}, 
+                        cosmosSearchOptions: {{ kind: 'vector-ivf', numLists: 5, similarity: 'COS', dimensions: 1536 }} 
+                    }}] 
+                }}"
+            ));
+
+        if (_database is null) return;
+
+        BsonDocument result = _database.RunCommand(command);
+        if (result["ok"] != 1)
+            _logger.LogError("Could not create vector index: " + result.ToJson());
+    }
 
     public IDictionary<string, IMongoCollection<BsonDocument>> GetCollections() => _collections;
 
-    private void InitializeCollections(string collectionNames)
+    public async Task ImportJson(string collectionName, string json)
     {
-	    var collections = collectionNames.Split(',').ToList();
-	    foreach (string collectionName in collections)
-	    {
-		    IMongoCollection<BsonDocument>? collection = _database?.GetCollection<BsonDocument>(collectionName.Trim()) ?? throw new ArgumentException("Unable to connect to existing Azure Cosmos DB for MongoDB vCore collection or database.");
-		    _collections.Add(collectionName, collection);
-	    }
+        try
+        {
+            IMongoCollection<BsonDocument> collection = _collections[collectionName];
+            var documents = BsonSerializer.Deserialize<IEnumerable<BsonDocument>>(json);
+            await InsertDocumentsAsync(collection, documents);
+        }
+        catch (MongoException exception)
+        {
+            _logger.LogError($"Could not import document: {exception.Message}");
+            throw;
+        }
     }
 
-	private void CreateVectorIndexIfNotExists(IMongoCollection<BsonDocument> vectorCollection)
-	{
-		try
-		{
-			string vectorIndexName = "vectorSearchIndex";
-			using (IAsyncCursor<BsonDocument> indexCursor = vectorCollection.Indexes.List())
-			{
-				bool vectorIndexExists = indexCursor.ToList().Any(x => x["name"] == vectorIndexName);
-				if (!vectorIndexExists)
-				{
-					BsonDocumentCommand<BsonDocument> command = new BsonDocumentCommand<BsonDocument>(
-					BsonDocument.Parse(@"
-						{ 
-							createIndexes: 'vectors', 
-							indexes: [{ 
-								name: 'vectorSearchIndex', 
-								key: { vector: 'cosmosSearch' }, 
-								cosmosSearchOptions: { kind: 'vector-ivf', numLists: 5, similarity: 'COS', dimensions: 1536 } 
-							}] 
-						}"
-					));
+    private async Task InsertDocumentsAsync(IMongoCollection<BsonDocument> collection, IEnumerable<BsonDocument> documents)
+    {
+        await collection.InsertManyAsync(documents);
+    }
 
-					if (_database is null) return;
+    public async Task UpsertVector(BsonDocument document)
+    {
+        if (!document.Contains("_id"))
+        {
+            _logger.LogError("Document does not contain _id.");
+            throw new ArgumentException("Document does not contain _id.");
+        }
 
-					BsonDocument result = _database.RunCommand(command);
-					if (result["ok"] != 1)
-						_logger.LogError("Could not create vector index: " + result.ToJson());
-				}
-			}
-		}
-		catch (Exception exception)
-		{
-			_logger.LogError("Could not create vector index: " + exception.Message);
-		}
-	}
-	
-	public async Task ImportJson(string collectionName, string json)
-	{
-		try
-		{
-			IMongoCollection<BsonDocument> collection = _collections[collectionName];
-			var documents = BsonSerializer.Deserialize<IEnumerable<BsonDocument>>(json);
-			await collection.InsertManyAsync(documents);
-		}
-		catch (MongoException exception)
-		{
-			_logger.LogError($"Could not import document: {exception.Message}");
-			throw;
-		}
-	}
-	
-	public async Task UpsertVector(BsonDocument document)
-	{
-		if (!document.Contains("_id"))
-		{
-			_logger.LogError("Document does not contain _id.");
-			throw new ArgumentException("Document does not contain _id.");
-		}
+        try
+        {
+            await UpsertDocumentInVectorsCollection(document);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError($"Could not upsert vector: {exception.Message}");
+            throw;
+        }
+    }
 
-		try
-		{
-			var filter = Builders<BsonDocument>.Filter.Eq("_id", document["_id"]);
-			var options = new ReplaceOptions { IsUpsert = true };
-			await _collections["vectors"].ReplaceOneAsync(filter, document, options);
-		}
-		catch (Exception exception)
-		{
-			_logger.LogError($"Could not upsert vector: {exception.Message}");
-			throw;
-		}
-	}
+    private async Task UpsertDocumentInVectorsCollection(BsonDocument document)
+    {
+        var filter = Builders<BsonDocument>.Filter.Eq("_id", document["_id"]);
+        var options = new ReplaceOptions { IsUpsert = true };
+        await _collections[CollectionEnumerator.Vectors.Name].ReplaceOneAsync(filter, document, options);
+    }
 }

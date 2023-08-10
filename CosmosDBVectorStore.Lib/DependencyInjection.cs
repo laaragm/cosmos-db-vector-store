@@ -12,6 +12,9 @@ public static class DependencyInjection
         services.AddScoped<IOpenAIService, OpenAIService>();
         services.AddScoped<IPdfIngestorService, PdfIngestorService>();
         services.AddScoped<IVectorsGeneratorService, VectorsGeneratorService>();
+        services.AddScoped<IAzureOpenAIClientHandler, AzureOpenAIClientHandler>();
+        services.AddScoped<IOpenAIClientHandler, OpenAIClientHandler>();
+        services.AddScoped<IOpenAIClientFactory, OpenAIClientFactory>();
 
         return services;
     }

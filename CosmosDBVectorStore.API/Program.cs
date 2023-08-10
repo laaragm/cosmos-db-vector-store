@@ -21,8 +21,7 @@ var host = new HostBuilder()
             config["OpenAIEmbeddingsDeployment"], 
             config["OpenAIMaxTokens"], 
             config["DbConnectionString"],
-            config["DbName"], 
-            config["DbCollectionNames"]);
+            config["DbName"]);
     })
     .ConfigureServices(services =>
     {

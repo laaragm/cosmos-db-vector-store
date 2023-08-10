@@ -9,5 +9,4 @@ public interface IAppSettings
     string OpenAIMaxTokens { get; }
     string DbConnectionString { get; }
     string DbName { get; }
-    string DbCollectionNames { get; }
 }

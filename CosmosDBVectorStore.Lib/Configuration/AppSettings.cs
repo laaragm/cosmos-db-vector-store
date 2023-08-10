@@ -11,9 +11,8 @@ public class AppSettings : IAppSettings
     public string OpenAIMaxTokens { get; }
     public string DbConnectionString { get; }
     public string DbName { get; }
-    public string DbCollectionNames { get; }
 
-    public AppSettings(string storageAccountConnectionString, string openAIEndpoint, string openAIKey, string openAIEmbeddingsDeployment, string openAIMaxTokens, string dbConnectionString, string dbName, string dbCollectionNames)
+    public AppSettings(string storageAccountConnectionString, string openAIEndpoint, string openAIKey, string openAIEmbeddingsDeployment, string openAIMaxTokens, string dbConnectionString, string dbName)
     {
         StorageAccountConnectionString = storageAccountConnectionString;
         OpenAIEndpoint = openAIEndpoint;
@@ -22,6 +21,5 @@ public class AppSettings : IAppSettings
         OpenAIMaxTokens = openAIMaxTokens;
         DbConnectionString = dbConnectionString;
         DbName = dbName;
-        DbCollectionNames = dbCollectionNames;
     }
 }

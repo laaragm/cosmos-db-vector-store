@@ -22,23 +22,8 @@ public class PdfIngestorService : IPdfIngestorService
 		{
 			_logger.LogInformation("Ingesting document.");
 
-			// PDF text extraction
-			var pagesList = new List<Dictionary<string, string>>();
-			using (PdfDocument document = PdfDocument.Open(pdfData))
-			{
-				for (int i = 0; i < document.NumberOfPages; i++)
-				{
-					pagesList.Add(new Dictionary<string, string>
-					{
-						{ "DocumentName", blobName },
-						{ "Content", document.GetPage(i + 1).Text }
-					});
-				}
-			}
-
-			// Convert to JSON string
-			var jsonString = JsonConvert.SerializeObject(pagesList);
-			await _mongoDbService.ImportJson("docs", jsonString);
+			var pagesList = ExtractTextFromPdf(pdfData, blobName);
+			await StorePdfData(pagesList);
 
 			_logger.LogInformation($"Data ingestion has been completed for blob: {blobName}");
 		}
@@ -47,5 +32,27 @@ public class PdfIngestorService : IPdfIngestorService
 			_logger.LogError($"Could not ingest data: {ex.Message}");
 			throw;
 		}
+	}
+
+	private List<Dictionary<string, string>> ExtractTextFromPdf(byte[] pdfData, string blobName)
+	{
+		var pagesList = new List<Dictionary<string, string>>();
+		using PdfDocument document = PdfDocument.Open(pdfData);
+		for (int i = 0; i < document.NumberOfPages; i++)
+		{
+			pagesList.Add(new Dictionary<string, string>
+			{
+				{ "DocumentName", blobName },
+				{ "Content", document.GetPage(i + 1).Text }
+			});
+		}
+
+		return pagesList;
+	}
+
+	private async Task StorePdfData(List<Dictionary<string, string>> pagesList)
+	{
+		var jsonString = JsonConvert.SerializeObject(pagesList);
+		await _mongoDbService.ImportJson("docs", jsonString);
 	}
 }
