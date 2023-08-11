@@ -14,8 +14,7 @@ Integrate AI-powered vector search in Cosmos DB. Store, index &amp; query high-d
         "OpenAIEmbeddingsDeployment": "",
         "OpenAIMaxTokens": "",
         "DbConnectionString": "",
-        "DbName": "",
-        "DbCollectionNames": ""
+        "DbName": ""
     }
 }
 ```
