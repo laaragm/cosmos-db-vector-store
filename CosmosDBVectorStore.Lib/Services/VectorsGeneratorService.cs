@@ -64,7 +64,7 @@ public class VectorsGeneratorService : IVectorsGeneratorService
     private async Task StoreVectorInDatabase(BsonDocument document, float[]? vector)
     {
         var pageDocument = BsonSerializer.Deserialize<PageDocument>(document);
-        pageDocument.Vector = vector;
+        pageDocument.vector = vector;
         await _mongoDbService.UpsertVector(pageDocument.ToBsonDocument());
     }
 }

@@ -7,16 +7,16 @@ public class PageDocument
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
-    public string DocumentName { get; set; }
-    public string Content { get; set; }
-    public float[]? Vector { get; set; }
+    public string id { get; set; }
+    public string documentName { get; set; }
+    public string content { get; set; }
+    public float[]? vector { get; set; }
 
     public PageDocument(string id, string documentName, string content, float[]? vector = null)
     {
-        Id = id;
-		DocumentName = documentName;
-        Content = content;
-        Vector = vector;
-    }
+        this.id = id;
+		this.documentName = documentName;
+        this.content = content;
+		this.vector = vector;
+	}
 }

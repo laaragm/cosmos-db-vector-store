@@ -42,8 +42,8 @@ public class PdfIngestorService : IPdfIngestorService
 		{
 			pagesList.Add(new Dictionary<string, string>
 			{
-				{ "DocumentName", blobName },
-				{ "Content", document.GetPage(i + 1).Text }
+				{ "documentName", blobName },
+				{ "content", document.GetPage(i + 1).Text }
 			});
 		}
 
